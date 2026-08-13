@@ -1,489 +1,419 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPM 파트 3분기 회식 투표</title>
-    <!-- Tailwind CSS -->
+    
+    <title>EVC Counterloader Impedance Trend</title>
+    
+    <link rel="icon" type="image/png" href="img/logo_company.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* 기본 폰트 설정 (Pretendard) */
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { 
-            font-family: 'Pretendard', sans-serif; 
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            color: #e2e8f0;
-        }
-        
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        
-        /* 날짜 체크박스 클릭 애니메이션 */
-        input[name="date"]:checked + div {
-            border-color: #6366f1;
-            background-color: rgba(99, 102, 241, 0.1);
-        }
-        input[name="date"]:checked + div .check-icon {
-            opacity: 1;
-            transform: scale(1);
-        }
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-        /* 장소 체크박스 클릭 애니메이션 (에메랄드 테마) */
-        input[name="restaurant"]:checked + div {
-            border-color: #10b981;
-            background-color: rgba(16, 185, 129, 0.1);
+    <script src="data/impedance_data.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Varela Round"', 'sans-serif'], noto: ['"Noto Sans KR"', 'sans-serif'] },
+                    colors: { slate: { 850: '#1e293b' } }
+                }
+            }
         }
-        input[name="restaurant"]:checked + div .rest-check-icon {
-            opacity: 1;
-            transform: scale(1);
-        }
+    </script>
+    <style>
+        body { font-family: 'Varela Round', sans-serif !important; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
+        .table-sticky th { position: sticky; top: 0; background-color: #f8fafc; z-index: 10; }
+        .scale-btn { transition: all 0.2s; }
+        .scale-btn:active { transform: scale(0.95); }
+        .blur-bg { backdrop-filter: blur(8px); }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="bg-slate-100 min-h-screen flex flex-col text-slate-800 relative">
 
-    <!-- 메인 컨테이너 -->
-    <div class="bg-slate-800/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_0_50px_rgba(99,102,241,0.15)] border border-slate-700 w-full max-w-md my-8 relative overflow-hidden">
-        
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500"></div>
-
-        <div class="text-center mb-10 mt-2">
-            <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-emerald-400">
-                🎉 SPM 3분기 회식
-            </h1>
-            <p class="text-slate-400 mt-3 font-medium">일정과 장소를 트렌디하게 골라주세요!</p>
+    <div id="security-overlay" class="fixed inset-0 z-[9999] bg-slate-900/90 blur-bg flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center border border-slate-200">
+            <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-slate-100 p-2">
+                <img src="img/logo_company.png" class="w-full h-full object-contain" alt="Company Logo">
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Access Restricted</h2>
+            <p class="text-sm text-slate-500 mb-6">Please enter the access code</p>
+            
+            <form onsubmit="event.preventDefault(); checkPassword();" class="space-y-4">
+                <input type="password" id="password-input" placeholder="Passcode" 
+                       class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-lg tracking-widest transition-all">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-200">
+                    Unlock Dashboard
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-xs font-bold mt-4 hidden animate-pulse">
+                <i data-lucide="alert-circle" class="w-3 h-3 inline mr-1"></i> Incorrect Password
+            </p>
         </div>
-
-        <!-- 1. 로그인 섹션 -->
-        <div id="loginSection" class="space-y-5">
-            <div>
-                <label for="userName" class="block text-sm font-medium text-slate-300 mb-2">참여자 이름</label>
-                <input type="text" id="userName" placeholder="이름을 입력하세요" 
-                    class="w-full px-5 py-4 bg-slate-900/50 border border-slate-600 rounded-2xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none">
-            </div>
-            
-            <div>
-                <label for="userPassword" class="block text-sm font-medium text-slate-300 mb-2 mt-4">입장 코드 (핸드폰 뒷 4자리)</label>
-                <input type="password" id="userPassword" placeholder="비밀번호 입력" 
-                    class="w-full px-5 py-4 bg-slate-900/50 border border-slate-600 rounded-2xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none">
-            </div>
-
-            <button id="loginBtn" 
-                class="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 px-4 rounded-2xl shadow-[0_4px_14px_0_rgba(99,102,241,0.39)] transition-all transform hover:-translate-y-0.5">
-                로그인 및 투표 시작
-            </button>
-            <p id="loginError" class="text-rose-400 text-sm text-center hidden font-medium"></p>
-        </div>
-
-        <!-- 2. 투표 폼 섹션 -->
-        <form id="voteForm" class="hidden space-y-4">
-            
-            <!-- [A] 날짜 투표 -->
-            <div class="flex items-center justify-between mb-4 mt-2">
-                <h3 class="text-lg font-bold text-white">1. 참석 가능한 일자</h3>
-                <span class="text-xs font-semibold bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-md">중복 가능</span>
-            </div>
-            
-            <!-- 날짜 옵션들 (동일) -->
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="date" value="8월 7일 (금)" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <span class="text-lg font-medium text-slate-200">🗓️ 8월 7일 (금)</span>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="date" value="8월 14일 (금)" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <span class="text-lg font-medium text-slate-200">🗓️ 8월 14일 (금)</span>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="date" value="8월 21일 (금)" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <span class="text-lg font-medium text-slate-200">🗓️ 8월 21일 (금)</span>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="date" value="8월 28일 (금)" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <span class="text-lg font-medium text-slate-200">🗓️ 8월 28일 (금)</span>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-
-            <hr class="my-8 border-slate-700 border-t-2 rounded">
-
-            <!-- [B] 장소 투표 -->
-            <div class="flex items-center justify-between mb-4 mt-2">
-                <h3 class="text-lg font-bold text-white">2. 가장 끌리는 장소</h3>
-                <span class="text-xs font-semibold bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-md">최대 2곳 선택</span>
-            </div>
-
-            <!-- 큰집막창생고기 -->
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="restaurant" value="큰집막창생고기" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-lg font-medium text-slate-200">🥩 큰집막창생고기</span>
-                        <a href="https://map.naver.com/p/entry/place/1375980109?lng=127.0817834&lat=37.1350331&placePath=%2Fhome&entry=plt&searchType=place" 
-                           target="_blank" onclick="event.stopPropagation()" 
-                           class="text-xs w-max bg-slate-700 hover:bg-slate-600 text-emerald-300 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
-                            🗺️ 네이버 지도 보기
-                        </a>
-                    </div>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all rest-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-
-            <!-- 후대화로 -->
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="restaurant" value="후대화로 오산점" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-lg font-medium text-slate-200">🔥 후대화로 오산점</span>
-                        <a href="https://map.naver.com/p/entry/place/1593781320?c=15.00,0,0,0,dh&placePath=%2Fhome%3Ffrom%3Dmap%26fromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202607291521%26locale%3Dko%26svcName%3Dmap_pcv5" 
-                           target="_blank" onclick="event.stopPropagation()" 
-                           class="text-xs w-max bg-slate-700 hover:bg-slate-600 text-emerald-300 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
-                            🗺️ 네이버 지도 보기
-                        </a>
-                    </div>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all rest-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-
-            <!-- 테오쿠진 -->
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="restaurant" value="테오쿠진 동탄호수점" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-lg font-medium text-slate-200">🍽️ 테오쿠진 동탄호수점</span>
-                        <a href="https://map.naver.com/p/entry/place/1772490716?c=13.00,0,0,0,dh&placePath=%2Fhome%3Ffrom%3Dmap%26fromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202607291524%26locale%3Dko%26svcName%3Dmap_pcv5" 
-                           target="_blank" onclick="event.stopPropagation()" 
-                           class="text-xs w-max bg-slate-700 hover:bg-slate-600 text-emerald-300 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
-                            🗺️ 네이버 지도 보기
-                        </a>
-                    </div>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all rest-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-            
-            <!-- 장어섬 -->
-            <label class="block cursor-pointer relative">
-                <input type="checkbox" name="restaurant" value="장어섬 오산점" class="peer sr-only">
-                <div class="border-2 border-slate-600 rounded-2xl p-4 transition-all flex items-center justify-between hover:bg-slate-700/50">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-lg font-medium text-slate-200">🐟 장어섬 오산점</span>
-                        <a href="https://map.naver.com/p/entry/place/20352666?c=13.00,0,0,0,dh&placePath=%2Fhome%3Ffrom%3Dmap%26fromPanelNum%3D1%26additionalHeight%3D76%26timestamp%3D202607291525%26locale%3Dko%26svcName%3Dmap_pcv5" 
-                           target="_blank" onclick="event.stopPropagation()" 
-                           class="text-xs w-max bg-slate-700 hover:bg-slate-600 text-emerald-300 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
-                            🗺️ 네이버 지도 보기
-                        </a>
-                    </div>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-all">
-                        <svg class="w-4 h-4 text-white opacity-0 transform scale-50 transition-all rest-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-            </label>
-
-            <p id="formError" class="text-rose-400 text-sm text-center hidden font-bold mt-4"></p>
-
-            <button type="submit" 
-                class="w-full mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-4 px-4 rounded-2xl shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] transition-all transform hover:-translate-y-0.5 text-lg">
-                ✅ 투표 제출하기
-            </button>
-        </form>
-
-        <!-- 3. 결과 및 실시간 집계 표시 섹션 -->
-        <div id="messageSection" class="hidden mt-6 text-center p-6 rounded-2xl border backdrop-blur-sm">
-            <h3 id="messageTitle" class="text-xl font-bold mb-2"></h3>
-            <p id="messageText" class="text-slate-300 mb-6"></p>
-
-            <button id="modifyVoteBtn" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all mb-6 text-md border border-slate-600">
-                ✏️ 내 투표 다시하기
-            </button>
-            
-            <div id="resultContainer" class="text-left mt-2"></div>
-        </div>
-
+        <p class="text-slate-400 text-xs mt-8">ASENDIA Manufacturing Center &copy; 2026</p>
     </div>
 
-    <!-- 파이어베이스 스크립트 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    <header class="sticky top-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-40 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-indigo-200 shadow-lg">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-900 tracking-tight">EVC Counter-loaders Impedance Trend</h1>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Statistical Process Control Monitor</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+             <div class="bg-slate-100 px-3 py-1.5 rounded-full flex items-center gap-2 border border-slate-200">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-xs font-bold text-slate-600">Live Data</span>
+             </div>
+        </div>
+    </header>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAGHqvXTsfSFMcfECmfY35Z6JPkXpKJRf4",
-            authDomain: "dinnder-vote.firebaseapp.com",
-            projectId: "dinnder-vote",
-            storageBucket: "dinnder-vote.firebasestorage.app",
-            messagingSenderId: "1064660161021",
-            appId: "1:1064660161021:web:c3484d8b2ff65fb9b18994"
-        };
+    <div class="flex flex-1">
+        
+        <aside class="sticky top-16 h-[calc(100vh-4rem)] w-72 bg-white border-r border-slate-200 flex flex-col py-6 px-5 overflow-y-auto shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
+            <div class="mb-6">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Select Module</label>
+                <div class="relative">
+                    <i data-lucide="cpu" class="absolute left-3 top-3 w-4 h-4 text-slate-400 z-10"></i>
+                    <select id="moduleSelector" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer hover:bg-slate-100"></select>
+                    <i data-lucide="chevron-down" class="absolute right-3 top-3 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                </div>
+            </div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+            <div class="flex-1 min-h-[150px]">
+                <h3 class="text-xs font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <i data-lucide="list" class="w-3 h-3 text-indigo-500"></i> Active Counter-loaders
+                </h3>
+                <div id="unit-legend" class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scroll"></div>
+            </div>
 
-        const allowedUsers = {
-            "이루리": "2625", "윤정웅": "5442", "장형원": "0973", "장민규": "5436",
-            "정용래": "2458", "이태범": "6286", "김남중": "5054", "안동현": "4574",
-            "강현준": "9220", "이규빈": "1579", "임성훈": "0449", "박원석": "3817",
-            "정재훈": "9685", "조재영": "3178", "테스트": "1234"
-        };
+            <div class="mt-auto mb-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-wider">SPC Guide Line</h4>
+                <div class="space-y-3 text-xs text-slate-600 font-noto">
 
-        const loginSection = document.getElementById('loginSection');
-        const voteForm = document.getElementById('voteForm');
-        const messageSection = document.getElementById('messageSection');
-        const messageTitle = document.getElementById('messageTitle');
-        const messageText = document.getElementById('messageText');
-        const resultContainer = document.getElementById('resultContainer');
-        const loginBtn = document.getElementById('loginBtn');
-        const userNameInput = document.getElementById('userName');
-        const userPasswordInput = document.getElementById('userPassword');
-        const loginError = document.getElementById('loginError');
-        const formError = document.getElementById('formError');
-        const modifyVoteBtn = document.getElementById('modifyVoteBtn');
+                    <p class="text-[10px] text-slate-400 font-bold pt-1 border-t border-slate-200/50 mt-1">
+                        * Mean line appears when N ≥ 20
+                    </p>
+                </div>
+            </div>
+            
+            <a href="impedance_admin.html" class="pt-4 border-t border-slate-100 group block hover:bg-slate-50 -mx-2 px-2 rounded-xl transition-colors">
+                <div class="flex items-center gap-3">
+                    <img src="img/logo_company.png" class="w-10 h-10 rounded-xl shadow-sm border border-slate-100 object-cover bg-white" alt="MTC Logo">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">Manufacturing<br>Technology Center</span>
+                        <span class="text-[10px] text-slate-400 mt-1 flex items-center gap-1 group-hover:text-indigo-500">
+                            <i data-lucide="settings" class="w-3 h-3"></i> Admin Page
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </aside>
 
-        let currentUser = "";
-        const COLLECTION_NAME = "voted_tokens_2026_q3";
-
-        // 장소 최대 2곳 제한 로직
-        const restaurantCheckboxes = document.querySelectorAll('input[name="restaurant"]');
-        restaurantCheckboxes.forEach(cb => {
-            cb.addEventListener('change', () => {
-                const checkedCount = document.querySelectorAll('input[name="restaurant"]:checked').length;
-                if (checkedCount > 2) {
-                    cb.checked = false;
-                    alert('장소는 최대 2곳까지만 선택할 수 있습니다.');
-                }
-            });
-        });
-
-        async function showResults() {
-            try {
-                const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+        <main class="flex-1 bg-slate-50/50 p-6">
+            <div class="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 
-                let dateCounts = { "8월 7일 (금)": 0, "8월 14일 (금)": 0, "8월 21일 (금)": 0, "8월 28일 (금)": 0 };
-                let restaurantCounts = {
-                    "큰집막창생고기": 0, "후대화로 오산점": 0, 
-                    "테오쿠진 동탄호수점": 0, "장어섬 오산점": 0
-                };
-                let totalVoters = 0;
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-red-500 rounded-full"></span> HF Real (Z)
+                            <span class="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded font-bold ml-1">Ohms</span>
+                        </h2>
+                        <div class="flex gap-1">
+                            <button onclick="changeZoom('chart-hf-r', -0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">-</button>
+                            <button onclick="changeZoom('chart-hf-r', 0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">+</button>
+                        </div>
+                    </div>
+                    <div class="chart-container mb-4"><canvas id="chart-hf-r"></canvas></div>
+                    <div class="overflow-auto h-[120px] border-t border-slate-100 pt-2 custom-scroll">
+                        <table class="w-full text-[10px] text-center border-collapse table-sticky" id="table-hf-r"></table>
+                    </div>
+                </div>
 
-                querySnapshot.forEach((doc) => {
-                    const userName = doc.id;
-                    if (userName !== "테스트") { 
-                        totalVoters++;
-                        const data = doc.data();
-                        
-                        if (data.selected_dates) {
-                            data.selected_dates.forEach(date => {
-                                if (dateCounts[date] !== undefined) dateCounts[date]++;
-                            });
-                        }
-                        
-                        // 복수 선택 장소 카운트
-                        if (data.selected_restaurants) {
-                            data.selected_restaurants.forEach(rest => {
-                                if (restaurantCounts[rest] !== undefined) restaurantCounts[rest]++;
-                            });
-                        } else if (data.selected_restaurant && restaurantCounts[data.selected_restaurant] !== undefined) {
-                            // 이전 단일 선택 데이터 호환용
-                            restaurantCounts[data.selected_restaurant]++;
-                        }
-                    }
-                });
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-orange-500 rounded-full"></span> HF Imag (Z)
+                            <span class="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded font-bold ml-1">jOhms</span>
+                        </h2>
+                        <div class="flex gap-1">
+                            <button onclick="changeZoom('chart-hf-i', -0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">-</button>
+                            <button onclick="changeZoom('chart-hf-i', 0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">+</button>
+                        </div>
+                    </div>
+                    <div class="chart-container mb-4"><canvas id="chart-hf-i"></canvas></div>
+                    <div class="overflow-auto h-[120px] border-t border-slate-100 pt-2 custom-scroll">
+                        <table class="w-full text-[10px] text-center border-collapse table-sticky" id="table-hf-i"></table>
+                    </div>
+                </div>
 
-                const sortedDates = Object.entries(dateCounts).sort((a, b) => b[1] - a[1]);
-                const sortedRestaurants = Object.entries(restaurantCounts).sort((a, b) => b[1] - a[1]);
-                const dateMedals = ["🥇 1위", "🥈 2위", "🥉 3위", "4위"];
-                const restMedals = ["🥇 1위", "🥈 2위", "🥉 3위", "4위"];
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-blue-500 rounded-full"></span> LF Real (Z)
+                            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold ml-1">Ohms</span>
+                        </h2>
+                        <div class="flex gap-1">
+                            <button onclick="changeZoom('chart-lf-r', -0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">-</button>
+                            <button onclick="changeZoom('chart-lf-r', 0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">+</button>
+                        </div>
+                    </div>
+                    <div class="chart-container mb-4"><canvas id="chart-lf-r"></canvas></div>
+                    <div class="overflow-auto h-[120px] border-t border-slate-100 pt-2 custom-scroll">
+                        <table class="w-full text-[10px] text-center border-collapse table-sticky" id="table-lf-r"></table>
+                    </div>
+                </div>
 
-                let html = `<div class="text-center mb-6"><span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-sm font-bold px-4 py-1.5 rounded-full">실시간 ${totalVoters}명 참여중</span></div>`;
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span> LF Imag (Z)
+                            <span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-bold ml-1">jOhms</span>
+                        </h2>
+                        <div class="flex gap-1">
+                            <button onclick="changeZoom('chart-lf-i', -0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">-</button>
+                            <button onclick="changeZoom('chart-lf-i', 0.05)" class="scale-btn w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold">+</button>
+                        </div>
+                    </div>
+                    <div class="chart-container mb-4"><canvas id="chart-lf-i"></canvas></div>
+                    <div class="overflow-auto h-[120px] border-t border-slate-100 pt-2 custom-scroll">
+                        <table class="w-full text-[10px] text-center border-collapse table-sticky" id="table-lf-i"></table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
-                html += `<h4 class="font-bold text-white text-lg mb-3">🗓️ 날짜 득표 순위</h4>`;
-                html += `<ul class="space-y-3 mb-8">`;
-                sortedDates.forEach((item, index) => {
-                    html += `<li class="p-4 bg-slate-800/50 border border-slate-700 rounded-xl flex justify-between items-center shadow-lg">
-                        <span class="font-semibold text-slate-200">${dateMedals[index] || ""} ${item[0]}</span>
-                        <span class="font-bold text-indigo-300 bg-indigo-900/50 px-3 py-1 rounded-full">${item[1]} 표</span>
-                    </li>`;
-                });
-                html += `</ul>`;
+    <script>
+        // =========================================================================
+        // [1. CONFIGURATION]
+        // =========================================================================
+        const MODULE_MAP = {
+            'q_ferrite': 'Quantum2013D_Ferrite', 'q_air': 'Quantum2013D_Air',
+            'q_2m': 'Quantum2013D_2M', 'q_2014': 'Quantum2014D',
+            't_1213': 'Tykon1213', 't_0527': 'Tykon0527', 'chronos': 'Chronos'
+        };
+        const COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2', '#db2777', '#4f46e5'];
 
-                html += `<h4 class="font-bold text-white text-lg mb-3 border-t border-slate-700 pt-6">🥩 장소 득표 순위</h4>`;
-                html += `<ul class="space-y-3">`;
-                sortedRestaurants.forEach((item, index) => { 
-                    html += `<li class="p-4 bg-slate-800/50 border border-slate-700 rounded-xl flex justify-between items-center shadow-lg">
-                        <span class="font-semibold text-slate-200">${restMedals[index] || ""} ${item[0]}</span>
-                        <span class="font-bold text-emerald-300 bg-emerald-900/50 px-3 py-1 rounded-full">${item[1]} 표</span>
-                    </li>`;
-                });
-                html += `</ul>`;
+        let chartInstances = {};
+        let scaleState = { 'chart-hf-r': 0.3, 'chart-hf-i': 0.3, 'chart-lf-r': 0.3, 'chart-lf-i': 0.3 };
+        let currentMeans = { 'chart-hf-r': 0, 'chart-hf-i': 0, 'chart-lf-r': 0, 'chart-lf-i': 0 };
 
-                html += `<button onclick="location.reload()" class="w-full mt-8 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 font-bold py-3 px-4 rounded-xl transition-all">🔄 실시간 랭킹 새로고침</button>`;
-                resultContainer.innerHTML = html;
-
-            } catch (error) {
-                console.error("결과 불러오기 실패:", error);
-                resultContainer.innerHTML = `<p class="text-rose-400 text-center">결과를 불러오는 데 실패했습니다.</p>`;
+        // =========================================================================
+        // [2. AUTHENTICATION]
+        // =========================================================================
+        function checkPassword() {
+            const input = document.getElementById('password-input').value;
+            const errorMsg = document.getElementById('login-error');
+            
+            if(input === 'evc2580') {
+                const overlay = document.getElementById('security-overlay');
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.5s';
+                setTimeout(() => { 
+                    overlay.style.display = 'none'; 
+                    initApp(); 
+                }, 500);
+            } else {
+                errorMsg.classList.remove('hidden');
+                document.getElementById('password-input').value = '';
+                document.getElementById('password-input').focus();
             }
         }
 
-        loginBtn.addEventListener('click', async () => {
-            const name = userNameInput.value.trim();
-            const password = userPasswordInput.value.trim();
+        // =========================================================================
+        // [3. INIT]
+        // =========================================================================
+        function initApp() {
+            lucide.createIcons();
+            if (typeof IMPEDANCE_DB === 'undefined') {
+                alert("Data file (data/impedance_data.js) not found.\nPlease ensure the file exists.");
+                return;
+            }
+            initModuleSelector();
+            updateDashboard(Object.keys(MODULE_MAP)[0]);
+        }
+
+        function initModuleSelector() {
+            const selector = document.getElementById('moduleSelector');
+            Object.entries(MODULE_MAP).forEach(([key, name]) => {
+                const opt = document.createElement('option');
+                opt.value = key; opt.textContent = name; selector.appendChild(opt);
+            });
+            selector.addEventListener('change', (e) => updateDashboard(e.target.value));
+        }
+
+        // =========================================================================
+        // [4. DATA PROCESSING]
+        // =========================================================================
+        function updateDashboard(moduleId) {
+            const rawData = IMPEDANCE_DB[moduleId] || [];
             
-            if (!allowedUsers.hasOwnProperty(name)) {
-                loginError.innerText = "등록되지 않은 이름입니다. 파트장에게 문의하세요.";
-                loginError.classList.remove('hidden');
-                return;
-            }
-            if (allowedUsers[name] !== password) {
-                loginError.innerText = "입장 코드가 일치하지 않습니다.";
-                loginError.classList.remove('hidden');
-                return;
-            }
-
-            loginBtn.innerText = "데이터 확인 중...";
-            loginBtn.disabled = true;
-            loginError.classList.add('hidden');
-
-            try {
-                const tokenRef = doc(db, COLLECTION_NAME, name);
-                const docSnap = await getDoc(tokenRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    currentUser = name;
-                    
-                    if (data.selected_dates) {
-                        document.querySelectorAll('input[name="date"]').forEach(cb => {
-                            cb.checked = data.selected_dates.includes(cb.value);
-                        });
-                    }
-                    
-                    // 복수 선택 장소 복원
-                    if (data.selected_restaurants) {
-                        data.selected_restaurants.forEach(rest => {
-                            const cb = document.querySelector(`input[name="restaurant"][value="${rest}"]`);
-                            if (cb) cb.checked = true;
-                        });
-                    } else if (data.selected_restaurant) {
-                        const cb = document.querySelector(`input[name="restaurant"][value="${data.selected_restaurant}"]`);
-                        if (cb) cb.checked = true;
-                    }
-
-                    loginSection.classList.add('hidden');
-                    messageSection.classList.remove('hidden');
-                    modifyVoteBtn.classList.remove('hidden');
-                    
-                    messageSection.className = "mt-6 text-center p-6 bg-indigo-900/20 rounded-2xl border border-indigo-500/30 backdrop-blur-sm";
-                    messageTitle.className = "text-xl font-bold text-indigo-400 mb-2";
-                    messageTitle.innerText = "🛑 이미 투표를 완료하셨습니다!";
-                    messageText.innerText = "아래에서 현재 순위를 확인하거나 투표를 수정해 보세요.";
-                    
-                    await showResults(); 
-                } else {
-                    currentUser = name;
-                    loginSection.classList.add('hidden');
-                    voteForm.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error("오류:", error);
-                loginError.innerText = "서버 연결에 실패했습니다.";
-                loginError.classList.remove('hidden');
-                loginBtn.innerText = "로그인 및 투표 시작";
-                loginBtn.disabled = false;
-            }
-        });
-
-        userPasswordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loginBtn.click();
-        });
-
-        modifyVoteBtn.addEventListener('click', () => {
-            messageSection.classList.add('hidden');
-            voteForm.classList.remove('hidden');
-            const submitBtn = voteForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = false; 
-            submitBtn.innerText = "✅ 투표 수정 완료하기"; 
-        });
-
-        voteForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            formError.classList.add('hidden');
+            const months = [...new Set(rawData.map(d => d.month))].sort();
             
-            const checkedDates = document.querySelectorAll('input[name="date"]:checked');
-            const selectedDates = Array.from(checkedDates).map(cb => cb.value);
+            const serialGroups = {};
+            rawData.forEach(row => {
+                if(!serialGroups[row.serial]) serialGroups[row.serial] = {};
+                serialGroups[row.serial][row.month] = row;
+            });
+            const serials = Object.keys(serialGroups).sort();
 
-            if (selectedDates.length === 0) {
-                formError.innerText = "🚨 날짜를 최소 하루 이상 선택해 주세요!";
-                formError.classList.remove('hidden');
-                return;
-            }
+            renderComponent('chart-hf-r', 'table-hf-r', months, serials, serialGroups, 'hf_r');
+            renderComponent('chart-hf-i', 'table-hf-i', months, serials, serialGroups, 'hf_i');
+            renderComponent('chart-lf-r', 'table-lf-r', months, serials, serialGroups, 'lf_r');
+            renderComponent('chart-lf-i', 'table-lf-i', months, serials, serialGroups, 'lf_i');
 
-            const checkedRestaurants = document.querySelectorAll('input[name="restaurant"]:checked');
-            const selectedRestaurants = Array.from(checkedRestaurants).map(cb => cb.value);
+            updateLegendUI(serials);
+        }
 
-            if (selectedRestaurants.length === 0) {
-                formError.innerText = "🚨 장소를 최소 1곳 이상 선택해 주세요!";
-                formError.classList.remove('hidden');
-                return;
-            }
-            if (selectedRestaurants.length > 2) {
-                formError.innerText = "🚨 장소는 최대 2곳까지만 선택 가능합니다!";
-                formError.classList.remove('hidden');
-                return;
-            }
-
-            const submitBtn = voteForm.querySelector('button[type="submit"]');
-            submitBtn.innerText = "안전하게 저장 중...";
-            submitBtn.disabled = true;
-
-            try {
-                // 파이어베이스에 복수 선택 데이터를 저장하도록 변경
-                await setDoc(doc(db, COLLECTION_NAME, currentUser), { 
-                    selected_dates: selectedDates,
-                    selected_restaurants: selectedRestaurants, 
-                    time: new Date()
+        function renderComponent(canvasId, tableId, months, serials, serialGroups, dataKey) {
+            let allValues = [];
+            const datasets = serials.map((sn, idx) => {
+                const color = COLORS[idx % COLORS.length];
+                const dataPoints = months.map(m => {
+                    const val = serialGroups[sn][m] ? serialGroups[sn][m][dataKey] : null;
+                    if(val !== null) allValues.push(val);
+                    return val;
                 });
+                return {
+                    label: sn, data: dataPoints,
+                    borderColor: color, backgroundColor: color,
+                    borderWidth: 2, pointRadius: 3, tension: 0.1, fill: false
+                };
+            });
 
-                voteForm.classList.add('hidden');
-                messageSection.classList.remove('hidden');
-                modifyVoteBtn.classList.remove('hidden');
-                
-                messageSection.className = "mt-6 text-center p-6 bg-emerald-900/20 rounded-2xl border border-emerald-500/30 backdrop-blur-sm";
-                messageTitle.className = "text-xl font-bold text-emerald-400 mb-2";
-                messageTitle.innerText = "✅ 투표가 성공적으로 저장되었습니다!";
-                messageText.innerHTML = `의견 감사합니다. 현재 종합 순위를 확인해 보세요.`;
-                
-                await showResults();
+            const stats = calculateStats(allValues);
+            currentMeans[canvasId] = stats.mean;
+            const annotations = getSPCAnnotations(stats, months);
 
-            } catch (error) {
-                console.error("저장 오류:", error);
-                formError.innerText = "앗, 저장 중 문제가 발생했습니다.";
-                formError.classList.remove('hidden');
-                submitBtn.innerText = "✅ 투표 제출하기";
-                submitBtn.disabled = false;
+            renderChartJS(canvasId, months, datasets, annotations, stats);
+            renderTableHTML(tableId, months, serials, serialGroups, dataKey);
+        }
+
+        // =========================================================================
+        // [5. CHART RENDERING]
+        // =========================================================================
+        function renderChartJS(canvasId, labels, datasets, annotations, stats) {
+            const factor = scaleState[canvasId];
+            const meanVal = stats.mean || 10; 
+            const yMin = meanVal * (1 - factor);
+            const yMax = meanVal * (1 + factor);
+
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        annotation: { annotations: annotations },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { min: yMin, max: yMax, grid: { color: '#f1f5f9' } }
+                    }
+                }
+            });
+        }
+
+        // =========================================================================
+        // [6. TABLE RENDERING]
+        // =========================================================================
+        function renderTableHTML(tableId, months, serials, serialGroups, dataKey) {
+            const table = document.getElementById(tableId);
+            table.innerHTML = '';
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `<th class="p-2 bg-slate-50 border-b border-slate-200 text-slate-500 font-bold sticky top-0 z-10">Month</th>`;
+            serials.forEach((sn, i) => {
+                const color = COLORS[i % COLORS.length];
+                headerRow.innerHTML += `<th class="p-2 bg-slate-50 border-b border-slate-200 font-bold sticky top-0 z-10" style="color:${color}">${sn}</th>`;
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            months.forEach(month => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0";
+                tr.innerHTML = `<td class="p-1.5 font-medium text-slate-600 bg-white sticky left-0">${month}</td>`;
+                
+                serials.forEach(sn => {
+                    const val = serialGroups[sn][month] ? serialGroups[sn][month][dataKey] : '-';
+                    const valClass = val !== '-' ? 'font-bold text-slate-700' : 'text-slate-300';
+                    tr.innerHTML += `<td class="p-1.5 ${valClass}">${val}</td>`;
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+        }
+
+        // =========================================================================
+        // [7. STATS & HELPERS]
+        // =========================================================================
+        function calculateStats(values) {
+            const n = values.length;
+            if (n === 0) return { n: 0, mean: 0, stdDev: 0 };
+            const sum = values.reduce((a, b) => a + b, 0);
+            const mean = sum / n;
+            const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+            return { n, mean, stdDev: Math.sqrt(variance) };
+        }
+
+        function getSPCAnnotations(stats, months) {
+            return {};
+        }
+
+        function changeZoom(canvasId, delta) {
+            let newFactor = scaleState[canvasId] - delta;
+            if (newFactor < 0.05) newFactor = 0.05;
+            if (newFactor > 2.0) newFactor = 2.0;
+            scaleState[canvasId] = newFactor;
+            
+            const chart = chartInstances[canvasId];
+            const mean = currentMeans[canvasId];
+            if(chart && mean) {
+                chart.options.scales.y.min = mean * (1 - newFactor);
+                chart.options.scales.y.max = mean * (1 + newFactor);
+                chart.update();
             }
-        });
+        }
+
+        function updateLegendUI(serials) {
+            const container = document.getElementById('unit-legend');
+            container.innerHTML = '';
+            serials.forEach((sn, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 p-2 rounded hover:bg-slate-50 transition-colors text-xs font-medium text-slate-600";
+                div.innerHTML = `<span class="w-2.5 h-2.5 rounded-full" style="background-color: ${COLORS[idx % COLORS.length]}"></span><span>${sn}</span>`;
+                container.appendChild(div);
+            });
+        }
+        
+        window.onload = function() {
+            document.getElementById('password-input').focus();
+        };
     </script>
 </body>
 </html>
